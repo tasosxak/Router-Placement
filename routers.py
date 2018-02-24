@@ -40,9 +40,17 @@ def valuation(genetic_list):
 
 
 def target_id_covered(pos,routers):
+    global walls
     for rpos in routers:
-        if abs(pos[0] - rpos[0]) <= R and abs(pos[1] - rpos[1]) <= R:
-            return True;
+        exists_wall = False
+        if ( (abs(pos[0] - rpos[0]) <= R) and (abs(pos[1] - rpos[1]) <= R) ):
+            for wall in walls:
+                if min(pos[0],rpos[0]) <= wall[0] and wall[0] <= max(pos[0],rpos[0]) and min(pos[1],rpos[1]) <= wall[1] and wall[1] <= max(pos[1],rpos[1]):
+                    exists_wall = True
+                    break
+            if(exists_wall == False):
+                return True
+    return False
 
 
 def print_coverage(routers):
@@ -117,24 +125,29 @@ def init_list_sol():
 
 
 def genetic_alg(genetic_list):
-    global cur_budget
+    global cur_budget, rows, cols
+    all_points = rows * cols
+    root_cov_area = (2*R + 1)**2
+    threshold = 0.95
     print("Genetic algorithm starts...")
     while True:
-        for i in range(10):
+        for i in range(int(all_points / (root_cov_area * len(genetic_list) +1))):
             print("Calculating valuation...")
             val = valuation(genetic_list)
             cur_budget -= val
             print("cur_budget: " + str(cur_budget))
             cv = coverage(genetic_list)
             print("Coverage: " + str(cv))
-            if(cv >= 0.85 and cur_budget >=0):
+            if(cv >= threshold and cur_budget >=0):
                 print("TERMINATE!")
                 return genetic_list,cv
+            threshold -= 0.000001
             print("Reputing...")
             cur_budget += val
             reput(genetic_list)
         else:
             print("Renewing...")
+            threshold -= 0.000001
             renew(genetic_list)
 
 
@@ -148,10 +161,13 @@ init = tuple( [ int(x) for x in content[2].split()])
 grid = [ list(z) for z in content[3:]]
 
 valid_coordinates =[]
+walls = []
 for i in range(rows):
     for j in range(cols):
         if(grid[i][j] == "."):
             valid_coordinates.append((i,j))
+        elif (grid[i][j] == "#"):
+            walls.append((i,j))
 vcoor = valid_coordinates[:]
 #print(valid_coordinates)
 
